@@ -13,7 +13,9 @@ app.use(express.json());
 const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY
 });
-
+app.get("/", (req, res) => {
+    res.send("Chatbot backend is running!");
+});
 app.post("/chat", async (req, res) => {
     try {
         const { message } = req.body;
