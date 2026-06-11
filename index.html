@@ -200,7 +200,7 @@ body {
 .messages::-webkit-scrollbar { width: 5px; }
 .messages::-webkit-scrollbar-track { background: transparent; }
 .messages::-webkit-scrollbar-thumb {
-  background: rgba(146, 22, 22, 0.637);
+  background: rgba(255,255,255,0.08);
   border-radius: 10px;
 }
 .messages::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
@@ -295,7 +295,6 @@ body {
   border-radius: 5px;
   font-size: 11px;
   color: var(--text-dim);
-  transition: color 0.15s, background 0.15s;
   display: flex; align-items: center; gap: 3px;
   visibility: hidden;
   opacity: 0;
@@ -396,7 +395,7 @@ body {
 }
 
 .send-btn:hover {
-  background: #01000a;
+  background: #4f46e5;
   box-shadow: 0 6px 22px var(--accent-glow);
 }
 
@@ -435,7 +434,7 @@ body {
   <!-- Header -->
   <div class="header">
     <div class="header-left">
-      <div class="header-avatar">☪️</div>
+      <div class="header-avatar">🤖</div>
       <div class="header-info">
         <div class="header-name">Antaricksh's AI</div>
         <div class="header-status">
@@ -444,7 +443,7 @@ body {
         </div>
       </div>
     </div>
-    <div class="header-model">Allah is here</div>
+    <div class="header-model">AI Assistant</div>
   </div>
 
   <!-- Messages -->
@@ -452,7 +451,7 @@ body {
     <div class="msg-row bot">
       <div class="msg-avatar">✦</div>
       <div class="msg-content">
-        <div class="bubble">Hey! Allah is here to help you — ask me anything! 🚀</div>
+        <div class="bubble">Hey! Sham is here to help you — ask me anything! 🚀</div>
         <div class="msg-meta">
           <span class="timestamp" data-time></span>
         </div>
@@ -478,6 +477,64 @@ const messagesEl = document.getElementById("messages");
 const input      = document.getElementById("userInput");
 const sendBtn    = document.getElementById("sendBtn");
 const statusText = document.getElementById("statusText");
+
+/* ══════════════════════════════════════════════════════
+   🔔  OWNER NOTIFICATIONS — Discord Webhook
+   ══════════════════════════════════════════════════════
+   Paste your Discord webhook URL below to get a private
+   Discord message every time someone asks your chatbot.
+
+   How to get your webhook URL:
+   1. Open Discord → go to any channel you own
+   2. Click ⚙ Edit Channel → Integrations → Webhooks
+   3. Click "New Webhook" → Copy Webhook URL
+   4. Paste it below between the quotes
+
+   Leave it as "" to disable notifications.
+   ══════════════════════════════════════════════════════ */
+const NOTIFY_WEBHOOK = "";  // ← paste your Discord webhook URL here
+
+/* Sends a silent notification to Discord with the Q&A pair */
+function notifyOwner(question, answer) {
+  if (!NOTIFY_WEBHOOK) return; // disabled — do nothing
+
+  const time = new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    dateStyle: "medium",
+    timeStyle: "short"
+  });
+
+  // Trim long answers so Discord doesn't reject the payload
+  const shortAnswer = answer.length > 800
+    ? answer.slice(0, 800) + "…"
+    : answer;
+
+  const payload = {
+    username: "Antaricksh's AI — Log",
+    avatar_url: "https://cdn.discordapp.com/embed/avatars/0.png",
+    embeds: [{
+      color: 0x6366f1,
+      fields: [
+        {
+          name: "❓ Question asked",
+          value: question
+        },
+        {
+          name: "🤖 Bot replied",
+          value: shortAnswer
+        }
+      ],
+      footer: { text: `🕐 ${time} IST` }
+    }]
+  };
+
+  // Fire-and-forget — user never sees this
+  fetch(NOTIFY_WEBHOOK, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).catch(() => {}); // Silent fail — never crashes the chat
+}
 
 /* ── Timestamp stamp the initial bot message ─────────── */
 document.querySelector("[data-time]").textContent = now();
@@ -602,6 +659,10 @@ async function sendMessage() {
     removeTypingIndicator();
     addMessage(data.reply, "bot");
     statusText.textContent = "Online · Ready";
+
+    // 🔔 Notify owner with question + bot reply (silent, non-blocking)
+    notifyOwner(msg, data.reply);
+
   } catch (err) {
     removeTypingIndicator();
     addMessage("⚠ Could not reach the server. Check your connection.", "bot");
